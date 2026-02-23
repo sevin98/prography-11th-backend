@@ -1,6 +1,8 @@
 package com.prography11thbackend.domain.auth.service;
 
+import com.prography11thbackend.domain.member.entity.Member;
+
 public interface AuthService {
 
-    boolean login(String loginId, String password);
+    Member login(String loginId, String password);
 }

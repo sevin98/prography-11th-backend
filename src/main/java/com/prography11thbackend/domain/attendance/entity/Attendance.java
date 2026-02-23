@@ -39,18 +39,26 @@ public class Attendance extends BaseEntity {
     @Column
     private LocalDateTime checkedAt; // 출석 체크 시간
 
+    @Column
+    private String reason; // 사유 (QR 체크인 시 null)
+
     @Builder
-    public Attendance(Member member, Session session, AttendanceStatus status, Integer penalty, LocalDateTime checkedAt) {
+    public Attendance(Member member, Session session, AttendanceStatus status, Integer penalty, LocalDateTime checkedAt, String reason) {
         this.member = member;
         this.session = session;
         this.status = status;
         this.penalty = penalty;
         this.checkedAt = checkedAt;
+        this.reason = reason;
     }
 
     public void updateStatus(AttendanceStatus newStatus, Integer newPenalty) {
         this.status = newStatus;
         this.penalty = newPenalty;
+    }
+
+    public void updateReason(String newReason) {
+        this.reason = newReason;
     }
 
     public Integer getPenaltyDifference(Integer oldPenalty) {

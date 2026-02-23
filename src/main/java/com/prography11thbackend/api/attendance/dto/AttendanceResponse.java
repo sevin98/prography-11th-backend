@@ -3,24 +3,49 @@ package com.prography11thbackend.api.attendance.dto;
 import com.prography11thbackend.domain.attendance.entity.Attendance;
 import com.prography11thbackend.domain.attendance.entity.AttendanceStatus;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 public record AttendanceResponse(
         Long id,
-        Long memberId,
         Long sessionId,
+        Long memberId,
         AttendanceStatus status,
-        Integer penalty,
-        LocalDateTime checkedAt
+        Integer lateMinutes,
+        Integer penaltyAmount,
+        String reason,
+        Instant checkedInAt,
+        Instant createdAt,
+        Instant updatedAt
 ) {
     public static AttendanceResponse from(Attendance attendance) {
+        if (attendance.getSession() == null) {
+            throw new IllegalStateException("Attendance must have a session");
+        }
+        if (attendance.getMember() == null) {
+            throw new IllegalStateException("Attendance must have a member");
+        }
+        
+        LocalDateTime sessionStartTime = attendance.getSession().getStartTime();
+        LocalDateTime checkedAt = attendance.getCheckedAt();
+        
+        Integer lateMinutes = null;
+        if (checkedAt != null && sessionStartTime != null && checkedAt.isAfter(sessionStartTime)) {
+            lateMinutes = (int) java.time.Duration.between(sessionStartTime, checkedAt).toMinutes();
+        }
+        
         return new AttendanceResponse(
                 attendance.getId(),
-                attendance.getMember().getId(),
                 attendance.getSession().getId(),
+                attendance.getMember().getId(),
                 attendance.getStatus(),
+                lateMinutes,
                 attendance.getPenalty(),
-                attendance.getCheckedAt()
+                attendance.getReason(),
+                checkedAt != null ? checkedAt.toInstant(ZoneOffset.UTC) : null,
+                attendance.getCreatedAt() != null ? attendance.getCreatedAt().toInstant(ZoneOffset.UTC) : null,
+                attendance.getUpdatedAt() != null ? attendance.getUpdatedAt().toInstant(ZoneOffset.UTC) : null
         );
     }
 }

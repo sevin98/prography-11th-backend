@@ -4,6 +4,8 @@ import com.prography11thbackend.api.attendance.dto.AttendanceCheckRequest;
 import com.prography11thbackend.api.attendance.dto.AttendanceResponse;
 import com.prography11thbackend.domain.attendance.entity.Attendance;
 import com.prography11thbackend.domain.attendance.service.AttendanceService;
+import com.prography11thbackend.global.common.ApiResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -13,26 +15,27 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/attendances")
+@RequestMapping("/api/v1/attendances")
 @RequiredArgsConstructor
 public class AttendanceController {
 
     private final AttendanceService attendanceService;
 
     @PostMapping
-    public ResponseEntity<AttendanceResponse> checkAttendance(@RequestBody AttendanceCheckRequest request) {
+    public ResponseEntity<ApiResponse<AttendanceResponse>> checkAttendance(@Valid @RequestBody AttendanceCheckRequest request) {
         Attendance attendance = attendanceService.checkAttendanceByQR(
-                request.qrHashValue(),
+                request.hashValue(),
                 request.memberId()
         );
-        return ResponseEntity.status(HttpStatus.CREATED).body(AttendanceResponse.from(attendance));
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success(AttendanceResponse.from(attendance)));
     }
 
     @GetMapping
-    public ResponseEntity<List<AttendanceResponse>> getMyAttendances(@RequestParam Long memberId) {
-        List<AttendanceResponse> attendances = attendanceService.getMyAttendances(memberId).stream()
-                .map(AttendanceResponse::from)
+    public ResponseEntity<ApiResponse<List<com.prography11thbackend.api.attendance.dto.AttendanceMemberResponse>>> getMyAttendances(@RequestParam Long memberId) {
+        List<com.prography11thbackend.api.attendance.dto.AttendanceMemberResponse> attendances = attendanceService.getMyAttendances(memberId).stream()
+                .map(com.prography11thbackend.api.attendance.dto.AttendanceMemberResponse::from)
                 .collect(Collectors.toList());
-        return ResponseEntity.ok(attendances);
+        return ResponseEntity.ok(ApiResponse.success(attendances));
     }
 }

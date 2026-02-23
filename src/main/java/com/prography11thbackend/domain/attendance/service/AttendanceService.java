@@ -11,9 +11,9 @@ public interface AttendanceService {
 
     List<Attendance> getMyAttendances(Long memberId);
 
-    Attendance createAttendance(Long memberId, Long sessionId, String status);
+    Attendance createAttendance(Long sessionId, Long memberId, String status, Integer lateMinutes, String reason);
 
-    Attendance updateAttendance(Long attendanceId, String newStatus);
+    Attendance updateAttendance(Long attendanceId, String newStatus, Integer lateMinutes, String reason);
 
     List<Attendance> getAttendancesBySession(Long sessionId);
 
@@ -21,5 +21,9 @@ public interface AttendanceService {
 
     AttendanceSummaryResponse getAttendanceSummaryByMember(Long memberId);
 
-    AttendanceSummaryResponse getAttendanceSummaryBySession(Long sessionId);
+    List<com.prography11thbackend.api.attendance.dto.MemberAttendanceSummaryResponse> getAttendanceSummaryBySession(Long sessionId);
+
+    com.prography11thbackend.api.attendance.dto.MemberAttendanceDetailResponse getMemberAttendanceDetail(Long memberId);
+
+    com.prography11thbackend.api.attendance.dto.SessionAttendanceListResponse getSessionAttendances(Long sessionId);
 }

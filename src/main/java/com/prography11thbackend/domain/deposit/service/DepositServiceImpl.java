@@ -30,6 +30,12 @@ public class DepositServiceImpl implements DepositService {
 
     @Override
     public Deposit createInitialDeposit(Long memberId) {
+        // 중복 방어: 이미 보증금이 존재하면 생성하지 않음
+        java.util.Optional<Deposit> existingDeposit = depositRepository.findByMemberId(memberId);
+        if (existingDeposit.isPresent()) {
+            return existingDeposit.get();
+        }
+
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 

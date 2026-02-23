@@ -5,6 +5,7 @@ import com.prography11thbackend.domain.attendance.entity.AttendanceStatus;
 import com.prography11thbackend.domain.attendance.repository.AttendanceRepository;
 import com.prography11thbackend.domain.cohort.entity.CohortMember;
 import com.prography11thbackend.domain.cohort.repository.CohortMemberRepository;
+import com.prography11thbackend.domain.cohort.repository.CohortRepository;
 import com.prography11thbackend.domain.deposit.service.DepositService;
 import com.prography11thbackend.domain.member.entity.Member;
 import com.prography11thbackend.domain.member.entity.MemberStatus;
@@ -24,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -40,6 +42,7 @@ public class AttendanceServiceImpl implements AttendanceService {
     private final QRCodeRepository qrCodeRepository;
     private final MemberRepository memberRepository;
     private final CohortMemberRepository cohortMemberRepository;
+    private final CohortRepository cohortRepository;
     private final DepositService depositService;
     private final com.prography11thbackend.domain.session.repository.SessionRepository sessionRepository;
 
@@ -100,13 +103,14 @@ public class AttendanceServiceImpl implements AttendanceService {
                 .status(status)
                 .penalty(penalty)
                 .checkedAt(now)
+                .reason(null) // QR 체크인 시 reason은 null
                 .build();
 
         Attendance savedAttendance = attendanceRepository.save(attendance);
 
         // 패널티 발생 시 보증금 자동 차감
         if (penalty > 0) {
-            depositService.deductPenalty(memberId, penalty, "출석 체크 패널티");
+            depositService.deductPenalty(memberId, penalty, "출석 체크 패널티 (출결 ID: " + savedAttendance.getId() + ")");
         }
 
         return savedAttendance;
@@ -119,41 +123,54 @@ public class AttendanceServiceImpl implements AttendanceService {
     }
 
     @Override
-    public Attendance createAttendance(Long memberId, Long sessionId, String status) {
+    public Attendance createAttendance(Long sessionId, Long memberId, String status, Integer lateMinutes, String reason) {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
         Session session = sessionRepository.findById(sessionId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.SESSION_NOT_FOUND));
 
-        AttendanceStatus attendanceStatus = AttendanceStatus.valueOf(status);
-
-        // 공결 횟수 체크
-        if (attendanceStatus == AttendanceStatus.EXCUSED) {
-            checkExcuseLimit(memberId, session.getCohort().getId());
+        // 중복 출결 확인
+        if (attendanceRepository.findByMemberIdAndSessionId(memberId, sessionId).isPresent()) {
+            throw new BusinessException(ErrorCode.ATTENDANCE_ALREADY_CHECKED);
         }
 
-        Integer penalty = calculatePenalty(attendanceStatus, session.getStartTime(), LocalDateTime.now());
+        // 기수 회원 정보 확인
+        CohortMember cohortMember = cohortMemberRepository.findByMemberIdAndCohortId(memberId, session.getCohort().getId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.COHORT_MEMBER_NOT_FOUND));
+
+        AttendanceStatus attendanceStatus = AttendanceStatus.valueOf(status);
+
+        // 공결 횟수 체크 및 관리
+        if (attendanceStatus == AttendanceStatus.EXCUSED) {
+            checkExcuseLimit(memberId, session.getCohort().getId());
+            cohortMember.increaseExcuseCount();
+        }
+
+        // 패널티 계산
+        Integer penalty = calculatePenaltyForManual(attendanceStatus, lateMinutes);
 
         Attendance attendance = Attendance.builder()
                 .member(member)
                 .session(session)
                 .status(attendanceStatus)
                 .penalty(penalty)
-                .checkedAt(LocalDateTime.now())
+                .checkedAt(null) // 수동 등록 시 null
+                .reason(reason)
                 .build();
 
         Attendance savedAttendance = attendanceRepository.save(attendance);
 
+        // 패널티 > 0이면 보증금 차감
         if (penalty > 0) {
-            depositService.deductPenalty(memberId, penalty, "관리자 출결 등록 패널티");
+            depositService.deductPenalty(memberId, penalty, "출결 등록 - " + attendanceStatus.name() + " 패널티 " + penalty + "원 (출결 ID: " + savedAttendance.getId() + ")");
         }
 
         return savedAttendance;
     }
 
     @Override
-    public Attendance updateAttendance(Long attendanceId, String newStatus) {
+    public Attendance updateAttendance(Long attendanceId, String newStatus, Integer lateMinutes, String reason) {
         Attendance attendance = attendanceRepository.findById(attendanceId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ATTENDANCE_NOT_FOUND));
 
@@ -161,21 +178,34 @@ public class AttendanceServiceImpl implements AttendanceService {
         Integer oldPenalty = attendance.getPenalty();
         AttendanceStatus newStatusEnum = AttendanceStatus.valueOf(newStatus);
 
+        // 기수 회원 정보 확인
+        CohortMember cohortMember = cohortMemberRepository.findByMemberIdAndCohortId(
+                attendance.getMember().getId(), 
+                attendance.getSession().getCohort().getId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.COHORT_MEMBER_NOT_FOUND));
+
         // 공결 횟수 관리
         manageExcuseCount(attendance.getMember().getId(), attendance.getSession().getId(), oldStatus, newStatusEnum);
 
-        Integer newPenalty = calculatePenalty(newStatusEnum, attendance.getSession().getStartTime(), attendance.getCheckedAt());
+        // 패널티 계산
+        Integer newPenalty = calculatePenaltyForManual(newStatusEnum, lateMinutes);
         Integer penaltyDifference = newPenalty - oldPenalty;
 
+        // 출결 상태 및 패널티 업데이트
         attendance.updateStatus(newStatusEnum, newPenalty);
+        
+        // reason 업데이트 (전달된 경우)
+        if (reason != null) {
+            attendance.updateReason(reason);
+        }
 
         // 보증금 자동 조정
         if (penaltyDifference > 0) {
             // 패널티 증가 → 추가 차감
-            depositService.deductPenalty(attendance.getMember().getId(), penaltyDifference, "출결 수정 패널티");
+            depositService.deductPenalty(attendance.getMember().getId(), penaltyDifference, "출결 수정 - 패널티 " + penaltyDifference + "원 (출결 ID: " + attendance.getId() + ")");
         } else if (penaltyDifference < 0) {
             // 패널티 감소 → 환급
-            depositService.refundPenalty(attendance.getMember().getId(), Math.abs(penaltyDifference), "출결 수정 환급");
+            depositService.refundPenalty(attendance.getMember().getId(), Math.abs(penaltyDifference), "출결 수정 - 환급 " + Math.abs(penaltyDifference) + "원 (출결 ID: " + attendance.getId() + ")");
         }
 
         return attendance;
@@ -203,6 +233,24 @@ public class AttendanceServiceImpl implements AttendanceService {
                 if (sessionStartTime != null && checkedAt != null) {
                     long minutesLate = Duration.between(sessionStartTime, checkedAt).toMinutes();
                     return (int) Math.min(minutesLate * PENALTY_PER_MINUTE, MAX_LATE_PENALTY);
+                }
+                return 0;
+            case EXCUSED:
+                return 0;
+            default:
+                return 0;
+        }
+    }
+
+    private Integer calculatePenaltyForManual(AttendanceStatus status, Integer lateMinutes) {
+        switch (status) {
+            case PRESENT:
+                return 0;
+            case ABSENT:
+                return ABSENT_PENALTY;
+            case LATE:
+                if (lateMinutes != null && lateMinutes > 0) {
+                    return (int) Math.min(lateMinutes * PENALTY_PER_MINUTE, MAX_LATE_PENALTY);
                 }
                 return 0;
             case EXCUSED:
@@ -241,6 +289,10 @@ public class AttendanceServiceImpl implements AttendanceService {
     @Override
     @Transactional(readOnly = true)
     public AttendanceSummaryResponse getAttendanceSummaryByMember(Long memberId) {
+        // 회원 존재 확인
+        memberRepository.findById(memberId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+
         List<Attendance> attendances = attendanceRepository.findByMemberId(memberId);
         
         int presentCount = 0;
@@ -268,53 +320,166 @@ public class AttendanceServiceImpl implements AttendanceService {
             }
         }
 
+        // 현재 기수(11기)의 보증금 조회
+        Integer deposit = null;
+        try {
+            com.prography11thbackend.domain.cohort.entity.Cohort currentCohort = cohortRepository.findByNumber(CURRENT_COHORT_NUMBER)
+                    .orElse(null);
+            
+            if (currentCohort != null) {
+                Optional<com.prography11thbackend.domain.cohort.entity.CohortMember> cohortMemberOpt = 
+                        cohortMemberRepository.findByMemberIdAndCohortId(memberId, currentCohort.getId());
+                
+                if (cohortMemberOpt.isPresent()) {
+                    deposit = depositService.findDepositByMemberId(memberId)
+                            .map(com.prography11thbackend.domain.deposit.entity.Deposit::getBalance)
+                            .orElse(null);
+                }
+            }
+        } catch (Exception e) {
+            deposit = null;
+        }
+
         return new AttendanceSummaryResponse(
-                attendances.size(),
+                memberId,
                 presentCount,
-                lateCount,
                 absentCount,
+                lateCount,
                 excusedCount,
-                totalPenalty
+                totalPenalty,
+                deposit
         );
     }
 
     @Override
     @Transactional(readOnly = true)
-    public AttendanceSummaryResponse getAttendanceSummaryBySession(Long sessionId) {
-        List<Attendance> attendances = attendanceRepository.findBySessionId(sessionId);
-        
-        int presentCount = 0;
-        int lateCount = 0;
-        int absentCount = 0;
-        int excusedCount = 0;
-        int totalPenalty = 0;
+    public List<com.prography11thbackend.api.attendance.dto.MemberAttendanceSummaryResponse> getAttendanceSummaryBySession(Long sessionId) {
+        // 일정 존재 확인
+        Session session = sessionRepository.findById(sessionId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.SESSION_NOT_FOUND));
 
-        for (Attendance attendance : attendances) {
-            switch (attendance.getStatus()) {
-                case PRESENT:
-                    presentCount++;
-                    break;
-                case LATE:
-                    lateCount++;
-                    totalPenalty += attendance.getPenalty();
-                    break;
-                case ABSENT:
-                    absentCount++;
-                    totalPenalty += attendance.getPenalty();
-                    break;
-                case EXCUSED:
-                    excusedCount++;
-                    break;
+        // 현재 기수(11기)의 전체 CohortMember 목록 조회
+        com.prography11thbackend.domain.cohort.entity.Cohort currentCohort = cohortRepository.findByNumber(CURRENT_COHORT_NUMBER)
+                .orElseThrow(() -> new BusinessException(ErrorCode.COHORT_NOT_FOUND));
+
+        List<CohortMember> cohortMembers = cohortMemberRepository.findByCohortId(currentCohort.getId());
+
+        return cohortMembers.stream()
+                .map(cohortMember -> {
+                    Long memberId = cohortMember.getMember().getId();
+                    List<Attendance> memberAttendances = attendanceRepository.findByMemberId(memberId);
+
+                    int presentCount = 0;
+                    int absentCount = 0;
+                    int lateCount = 0;
+                    int excusedCount = 0;
+                    int totalPenalty = 0;
+
+                    for (Attendance attendance : memberAttendances) {
+                        switch (attendance.getStatus()) {
+                            case PRESENT:
+                                presentCount++;
+                                break;
+                            case ABSENT:
+                                absentCount++;
+                                totalPenalty += attendance.getPenalty();
+                                break;
+                            case LATE:
+                                lateCount++;
+                                totalPenalty += attendance.getPenalty();
+                                break;
+                            case EXCUSED:
+                                excusedCount++;
+                                break;
+                        }
+                    }
+
+                    // 보증금 조회
+                    Integer deposit = depositService.findDepositByMemberId(memberId)
+                            .map(com.prography11thbackend.domain.deposit.entity.Deposit::getBalance)
+                            .orElse(0);
+
+                    return new com.prography11thbackend.api.attendance.dto.MemberAttendanceSummaryResponse(
+                            memberId,
+                            cohortMember.getMember().getName(),
+                            presentCount,
+                            absentCount,
+                            lateCount,
+                            excusedCount,
+                            totalPenalty,
+                            deposit
+                    );
+                })
+                .collect(java.util.stream.Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public com.prography11thbackend.api.attendance.dto.MemberAttendanceDetailResponse getMemberAttendanceDetail(Long memberId) {
+        // 회원 존재 확인
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+
+        // 현재 기수(11기)의 CohortMember 조회
+        com.prography11thbackend.domain.cohort.entity.Cohort currentCohort = cohortRepository.findByNumber(CURRENT_COHORT_NUMBER)
+                .orElse(null);
+
+        Integer generation = null;
+        String partName = null;
+        String teamName = null;
+        Integer deposit = null;
+        Integer excuseCount = null;
+
+        if (currentCohort != null) {
+            Optional<CohortMember> cohortMemberOpt = cohortMemberRepository.findByMemberIdAndCohortId(memberId, currentCohort.getId());
+            if (cohortMemberOpt.isPresent()) {
+                CohortMember cohortMember = cohortMemberOpt.get();
+                generation = cohortMember.getCohort().getNumber();
+                partName = cohortMember.getPart() != null ? cohortMember.getPart().name() : null;
+                teamName = cohortMember.getTeam() != null ? cohortMember.getTeam().getName() : null;
+                excuseCount = cohortMember.getExcuseCount();
+
+                deposit = depositService.findDepositByMemberId(memberId)
+                        .map(com.prography11thbackend.domain.deposit.entity.Deposit::getBalance)
+                        .orElse(null);
             }
         }
 
-        return new AttendanceSummaryResponse(
-                attendances.size(),
-                presentCount,
-                lateCount,
-                absentCount,
-                excusedCount,
-                totalPenalty
+        // 전체 출결 기록 조회
+        List<Attendance> attendances = attendanceRepository.findByMemberId(memberId);
+        List<com.prography11thbackend.api.attendance.dto.AttendanceAdminResponse> attendanceResponses = attendances.stream()
+                .map(com.prography11thbackend.api.attendance.dto.AttendanceAdminResponse::from)
+                .collect(java.util.stream.Collectors.toList());
+
+        return new com.prography11thbackend.api.attendance.dto.MemberAttendanceDetailResponse(
+                memberId,
+                member.getName(),
+                generation,
+                partName,
+                teamName,
+                deposit,
+                excuseCount,
+                attendanceResponses
+        );
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public com.prography11thbackend.api.attendance.dto.SessionAttendanceListResponse getSessionAttendances(Long sessionId) {
+        // 일정 존재 확인
+        Session session = sessionRepository.findById(sessionId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.SESSION_NOT_FOUND));
+
+        // 출결 기록 조회
+        List<Attendance> attendances = attendanceRepository.findBySessionId(sessionId);
+        List<com.prography11thbackend.api.attendance.dto.AttendanceAdminResponse> attendanceResponses = attendances.stream()
+                .map(com.prography11thbackend.api.attendance.dto.AttendanceAdminResponse::from)
+                .collect(java.util.stream.Collectors.toList());
+
+        return new com.prography11thbackend.api.attendance.dto.SessionAttendanceListResponse(
+                sessionId,
+                session.getTitle(),
+                attendanceResponses
         );
     }
 }

@@ -14,5 +14,5 @@ public interface CohortService {
 
     Optional<Cohort> getCohortByNumber(Integer number);
 
-    CohortMember createCohortMember(Long memberId, Long cohortId, String part, Long teamId);
+    CohortMember createCohortMember(Long memberId, Long cohortId, Long partId, Long teamId);
 }

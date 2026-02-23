@@ -47,19 +47,30 @@ public class CohortServiceImpl implements CohortService {
     }
 
     @Override
-    public CohortMember createCohortMember(Long memberId, Long cohortId, String part, Long teamId) {
+    public CohortMember createCohortMember(Long memberId, Long cohortId, Long partId, Long teamId) {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
         Cohort cohort = cohortRepository.findById(cohortId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.COHORT_NOT_FOUND));
 
-        Part partEnum = Part.valueOf(part);
+        Part partEnum = null;
+        if (partId != null) {
+            // partId는 Part enum의 ordinal() + 6과 매핑 (6=SERVER, 7=WEB, 8=iOS, 9=ANDROID, 10=DESIGN)
+            Part[] parts = Part.values();
+            if (partId >= 6 && partId < 6 + parts.length) {
+                partEnum = parts[(int)(partId - 6)];
+            } else {
+                throw new BusinessException(ErrorCode.PART_NOT_FOUND);
+            }
+        } else {
+            throw new BusinessException(ErrorCode.PART_NOT_FOUND);
+        }
 
         Team team = null;
         if (teamId != null) {
             team = teamRepository.findById(teamId)
-                    .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_INPUT));
+                    .orElseThrow(() -> new BusinessException(ErrorCode.TEAM_NOT_FOUND));
         }
 
         CohortMember cohortMember = CohortMember.builder()

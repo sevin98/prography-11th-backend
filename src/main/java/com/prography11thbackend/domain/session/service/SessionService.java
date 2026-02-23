@@ -6,7 +6,7 @@ import java.util.List;
 
 public interface SessionService {
 
-    Session createSession(String title, String description, java.time.LocalDateTime startTime, Long cohortId);
+    Session createSession(String title, java.time.LocalDate date, java.time.LocalTime time, String location, Long cohortId);
 
     List<Session> getSessionsForMember(Long cohortId);
 
@@ -14,7 +14,7 @@ public interface SessionService {
 
     Session getSessionById(Long id);
 
-    Session updateSession(Long id, String title, String description, java.time.LocalDateTime startTime);
+    Session updateSession(Long id, String title, java.time.LocalDate date, java.time.LocalTime time, String location, com.prography11thbackend.domain.session.entity.SessionStatus status);
 
-    void deleteSession(Long id);
+    Session deleteSession(Long id);
 }

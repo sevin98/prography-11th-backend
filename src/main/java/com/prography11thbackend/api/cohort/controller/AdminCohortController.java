@@ -3,6 +3,7 @@ package com.prography11thbackend.api.cohort.controller;
 import com.prography11thbackend.api.cohort.dto.CohortResponse;
 import com.prography11thbackend.domain.cohort.entity.Cohort;
 import com.prography11thbackend.domain.cohort.service.CohortService;
+import com.prography11thbackend.global.common.ApiResponse;
 import com.prography11thbackend.global.exception.BusinessException;
 import com.prography11thbackend.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -16,24 +17,24 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/admin/cohorts")
+@RequestMapping("/api/v1/admin/cohorts")
 @RequiredArgsConstructor
 public class AdminCohortController {
 
     private final CohortService cohortService;
 
     @GetMapping
-    public ResponseEntity<List<CohortResponse>> getAllCohorts() {
-        List<CohortResponse> cohorts = cohortService.getAllCohorts().stream()
-                .map(CohortResponse::from)
+    public ResponseEntity<ApiResponse<List<com.prography11thbackend.api.cohort.dto.CohortListResponse>>> getAllCohorts() {
+        List<com.prography11thbackend.api.cohort.dto.CohortListResponse> cohorts = cohortService.getAllCohorts().stream()
+                .map(com.prography11thbackend.api.cohort.dto.CohortListResponse::from)
                 .collect(Collectors.toList());
-        return ResponseEntity.ok(cohorts);
+        return ResponseEntity.ok(ApiResponse.success(cohorts));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<CohortResponse> getCohort(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<CohortResponse>> getCohort(@PathVariable Long id) {
         Cohort cohort = cohortService.getCohortById(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.COHORT_NOT_FOUND));
-        return ResponseEntity.ok(CohortResponse.from(cohort));
+        return ResponseEntity.ok(ApiResponse.success(CohortResponse.from(cohort)));
     }
 }
