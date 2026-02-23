@@ -9,6 +9,7 @@ import com.prography11thbackend.domain.attendance.repository.AttendanceRepositor
 import com.prography11thbackend.domain.cohort.repository.CohortRepository;
 import com.prography11thbackend.domain.qrcode.repository.QRCodeRepository;
 import com.prography11thbackend.domain.session.entity.Session;
+import com.prography11thbackend.domain.session.entity.SessionStatus;
 import com.prography11thbackend.domain.session.service.SessionService;
 import com.prography11thbackend.global.common.ApiResponse;
 import com.prography11thbackend.global.exception.BusinessException;
@@ -46,9 +47,20 @@ public class AdminSessionController {
             @RequestParam(required = false) LocalDate dateTo,
             @RequestParam(required = false) String status
     ) {
+        // status 파라미터 enum 파싱 및 검증
+        SessionStatus statusEnum = null;
+        if (status != null && !status.isBlank()) {
+            try {
+                statusEnum = SessionStatus.valueOf(status.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                throw new BusinessException(ErrorCode.INVALID_SESSION_STATUS);
+            }
+        }
+        
         List<Session> sessions = sessionService.getSessionsForAdmin(getCurrentCohortId());
         
         // 필터링
+        final SessionStatus finalStatusEnum = statusEnum;
         List<Session> filteredSessions = sessions.stream()
                 .filter(session -> {
                     // dateFrom 필터
@@ -66,8 +78,8 @@ public class AdminSessionController {
                     }
                     
                     // status 필터
-                    if (status != null && !status.isBlank()) {
-                        if (!session.getStatus().name().equals(status)) {
+                    if (finalStatusEnum != null) {
+                        if (!session.getStatus().equals(finalStatusEnum)) {
                             return false;
                         }
                     }
@@ -139,7 +151,7 @@ public class AdminSessionController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<SessionAdminResponse>> updateSession(@PathVariable Long id, @RequestBody SessionUpdateRequest request) {
+    public ResponseEntity<ApiResponse<SessionAdminResponse>> updateSession(@PathVariable Long id, @Valid @RequestBody SessionUpdateRequest request) {
         Session session = sessionService.updateSession(
                 id,
                 request.title(),
@@ -188,9 +200,7 @@ public class AdminSessionController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<SessionAdminResponse>> deleteSession(@PathVariable Long id) {
-        Session session = sessionService.deleteSession(id);
-        
-        // 출결 요약 계산
+        // 삭제 전에 출결 요약을 먼저 계산 (cascade 삭제 방지)
         List<Attendance> attendances = attendanceRepository.findBySessionId(id);
         int present = 0;
         int absent = 0;
@@ -221,6 +231,9 @@ public class AdminSessionController {
                 excused,
                 attendances.size()
         );
+        
+        // 세션 삭제
+        Session session = sessionService.deleteSession(id);
         
         Boolean qrActive = qrCodeRepository.findBySessionIdAndIsActiveTrue(id).isPresent();
         

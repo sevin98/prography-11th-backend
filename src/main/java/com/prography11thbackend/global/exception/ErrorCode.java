@@ -25,6 +25,7 @@ public enum ErrorCode {
     SESSION_NOT_FOUND(HttpStatus.NOT_FOUND, "SESSION_001", "일정을 찾을 수 없습니다."),
     SESSION_NOT_IN_PROGRESS(HttpStatus.BAD_REQUEST, "SESSION_002", "진행 중인 일정이 아닙니다."),
     SESSION_ALREADY_CANCELLED(HttpStatus.BAD_REQUEST, "SESSION_003", "이미 취소된 일정입니다."),
+    INVALID_SESSION_STATUS(HttpStatus.BAD_REQUEST, "SESSION_004", "유효하지 않은 일정 상태입니다."),
 
     // QR Code
     QR_INVALID(HttpStatus.BAD_REQUEST, "QR_001", "유효하지 않은 QR 코드입니다."),
