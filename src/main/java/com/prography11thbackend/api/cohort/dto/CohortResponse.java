@@ -18,9 +18,18 @@ public record CohortResponse(
         Instant createdAt
 ) {
     public static CohortResponse from(Cohort cohort) {
-        // parts는 Part enum에서 생성 (각 Part에 대해 id는 ordinal + 6: SERVER=6, WEB=7, iOS=8, ANDROID=9, DESIGN=10)
+        // parts는 Part enum에서 생성 (명시적 매핑으로 API 계약 보장: SERVER=6, WEB=7, iOS=8, ANDROID=9, DESIGN=10)
         List<PartResponse> parts = Stream.of(Part.values())
-                .map(part -> PartResponse.from(part, (long) (part.ordinal() + 6)))
+                .map(part -> {
+                    Long partId = switch (part) {
+                        case SERVER -> 6L;
+                        case WEB -> 7L;
+                        case iOS -> 8L;
+                        case ANDROID -> 9L;
+                        case DESIGN -> 10L;
+                    };
+                    return PartResponse.from(part, partId);
+                })
                 .collect(Collectors.toList());
         
         List<TeamResponse> teams = cohort.getTeams().stream()
