@@ -19,6 +19,10 @@ public record AttendanceMemberResponse(
         Instant createdAt
 ) {
     public static AttendanceMemberResponse from(Attendance attendance) {
+        if (attendance.getSession() == null) {
+            throw new IllegalStateException("Attendance must have a session");
+        }
+        
         LocalDateTime sessionStartTime = attendance.getSession().getStartTime();
         LocalDateTime checkedAt = attendance.getCheckedAt();
         
