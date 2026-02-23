@@ -1,9 +1,12 @@
 package com.prography11thbackend.api.member.controller;
 
+import com.prography11thbackend.api.member.dto.MemberDashboardResponse;
 import com.prography11thbackend.api.member.dto.MemberRegisterRequest;
 import com.prography11thbackend.api.member.dto.MemberResponse;
 import com.prography11thbackend.api.member.dto.MemberUpdateRequest;
+import com.prography11thbackend.api.member.dto.MemberWithdrawResponse;
 import com.prography11thbackend.domain.cohort.repository.CohortMemberRepository;
+import com.prography11thbackend.domain.deposit.entity.Deposit;
 import com.prography11thbackend.domain.deposit.service.DepositService;
 import com.prography11thbackend.domain.member.entity.Member;
 import com.prography11thbackend.domain.member.service.MemberService;
@@ -55,7 +58,7 @@ public class AdminMemberController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<com.prography11thbackend.api.member.dto.MemberDashboardResponse>> getAllMembers(
+    public ResponseEntity<ApiResponse<MemberDashboardResponse>> getAllMembers(
             @RequestParam(required = false, defaultValue = "0") @Min(value = 0, message = "페이지는 0 이상이어야 합니다") Integer page,
             @RequestParam(required = false, defaultValue = "10") @Min(value = 1, message = "페이지 크기는 1 이상이어야 합니다") Integer size,
             @RequestParam(required = false) String searchType,
@@ -66,10 +69,10 @@ public class AdminMemberController {
             @RequestParam(required = false) String status
     ) {
         // 모든 회원 조회
-        List<com.prography11thbackend.domain.member.entity.Member> allMembers = memberService.getAllMembers();
+        List<Member> allMembers = memberService.getAllMembers();
         
         // DB 레벨 필터: status, searchType+searchValue
-        List<com.prography11thbackend.domain.member.entity.Member> filteredMembers = allMembers.stream()
+        List<Member> filteredMembers = allMembers.stream()
                 .filter(member -> {
                     // status 필터
                     if (status != null && !status.isBlank()) {
@@ -104,7 +107,7 @@ public class AdminMemberController {
                 .collect(Collectors.toList());
         
         // 메모리 레벨 필터: generation, partName, teamName
-        List<com.prography11thbackend.domain.member.entity.Member> finalMembers = filteredMembers.stream()
+        List<Member> finalMembers = filteredMembers.stream()
                 .filter(member -> {
                     var cohortMember = cohortMemberRepository.findByMemberId(member.getId()).stream()
                             .filter(cm -> cm.getCohort().getNumber().equals(CURRENT_COHORT_NUMBER))
@@ -144,7 +147,7 @@ public class AdminMemberController {
         int start = page * size;
         int end = Math.min(start + size, totalElements);
         
-        List<com.prography11thbackend.domain.member.entity.Member> pagedMembers = 
+        List<Member> pagedMembers = 
                 start < totalElements ? finalMembers.subList(start, end) : List.of();
         
         // MemberResponse 변환
@@ -157,7 +160,7 @@ public class AdminMemberController {
                     
                     // deposit 조회
                     Integer deposit = depositService.findDepositByMemberId(member.getId())
-                            .map(com.prography11thbackend.domain.deposit.entity.Deposit::getBalance)
+                            .map(Deposit::getBalance)
                             .orElse(null);
                     
                     return MemberResponse.from(member, cohortMember, deposit);
@@ -167,8 +170,8 @@ public class AdminMemberController {
         // deposit을 포함한 MemberResponse를 위해 별도 DTO 필요하지만, 일단 기존 구조 유지
         // TODO: MemberResponse에 deposit 필드 추가 필요
         
-        com.prography11thbackend.api.member.dto.MemberDashboardResponse dashboardResponse = 
-                new com.prography11thbackend.api.member.dto.MemberDashboardResponse(
+        MemberDashboardResponse dashboardResponse = 
+                new MemberDashboardResponse(
                         memberResponses,
                         page,
                         size,
@@ -207,8 +210,8 @@ public class AdminMemberController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<com.prography11thbackend.api.member.dto.MemberWithdrawResponse>> withdrawMember(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<MemberWithdrawResponse>> withdrawMember(@PathVariable Long id) {
         Member member = memberService.withdraw(id);
-        return ResponseEntity.ok(ApiResponse.success(com.prography11thbackend.api.member.dto.MemberWithdrawResponse.from(member)));
+        return ResponseEntity.ok(ApiResponse.success(MemberWithdrawResponse.from(member)));
     }
 }

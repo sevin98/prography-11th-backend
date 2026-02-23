@@ -1,8 +1,12 @@
 package com.prography11thbackend.api.attendance.controller;
 
+import com.prography11thbackend.api.attendance.dto.AttendanceAdminResponse;
 import com.prography11thbackend.api.attendance.dto.AttendanceCreateRequest;
 import com.prography11thbackend.api.attendance.dto.AttendanceResponse;
 import com.prography11thbackend.api.attendance.dto.AttendanceUpdateRequest;
+import com.prography11thbackend.api.attendance.dto.MemberAttendanceDetailResponse;
+import com.prography11thbackend.api.attendance.dto.MemberAttendanceSummaryResponse;
+import com.prography11thbackend.api.attendance.dto.SessionAttendanceListResponse;
 import com.prography11thbackend.domain.attendance.entity.Attendance;
 import com.prography11thbackend.domain.attendance.service.AttendanceService;
 import com.prography11thbackend.global.common.ApiResponse;
@@ -23,7 +27,7 @@ public class AdminAttendanceController {
     private final AttendanceService attendanceService;
 
     @PostMapping
-    public ResponseEntity<ApiResponse<com.prography11thbackend.api.attendance.dto.AttendanceAdminResponse>> createAttendance(@Valid @RequestBody AttendanceCreateRequest request) {
+    public ResponseEntity<ApiResponse<AttendanceAdminResponse>> createAttendance(@Valid @RequestBody AttendanceCreateRequest request) {
         Attendance attendance = attendanceService.createAttendance(
                 request.sessionId(),
                 request.memberId(),
@@ -32,30 +36,30 @@ public class AdminAttendanceController {
                 request.reason()
         );
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success(com.prography11thbackend.api.attendance.dto.AttendanceAdminResponse.from(attendance)));
+                .body(ApiResponse.success(AttendanceAdminResponse.from(attendance)));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<com.prography11thbackend.api.attendance.dto.AttendanceAdminResponse>> updateAttendance(@PathVariable Long id, @Valid @RequestBody AttendanceUpdateRequest request) {
+    public ResponseEntity<ApiResponse<AttendanceAdminResponse>> updateAttendance(@PathVariable Long id, @Valid @RequestBody AttendanceUpdateRequest request) {
         Attendance attendance = attendanceService.updateAttendance(id, request.status(), request.lateMinutes(), request.reason());
-        return ResponseEntity.ok(ApiResponse.success(com.prography11thbackend.api.attendance.dto.AttendanceAdminResponse.from(attendance)));
+        return ResponseEntity.ok(ApiResponse.success(AttendanceAdminResponse.from(attendance)));
     }
 
     @GetMapping("/sessions/{sessionId}")
-    public ResponseEntity<ApiResponse<com.prography11thbackend.api.attendance.dto.SessionAttendanceListResponse>> getAttendancesBySession(@PathVariable Long sessionId) {
-        com.prography11thbackend.api.attendance.dto.SessionAttendanceListResponse response = attendanceService.getSessionAttendances(sessionId);
+    public ResponseEntity<ApiResponse<SessionAttendanceListResponse>> getAttendancesBySession(@PathVariable Long sessionId) {
+        SessionAttendanceListResponse response = attendanceService.getSessionAttendances(sessionId);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     @GetMapping("/members/{memberId}")
-    public ResponseEntity<ApiResponse<com.prography11thbackend.api.attendance.dto.MemberAttendanceDetailResponse>> getAttendancesByMember(@PathVariable Long memberId) {
-        com.prography11thbackend.api.attendance.dto.MemberAttendanceDetailResponse response = attendanceService.getMemberAttendanceDetail(memberId);
+    public ResponseEntity<ApiResponse<MemberAttendanceDetailResponse>> getAttendancesByMember(@PathVariable Long memberId) {
+        MemberAttendanceDetailResponse response = attendanceService.getMemberAttendanceDetail(memberId);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     @GetMapping("/sessions/{sessionId}/summary")
-    public ResponseEntity<ApiResponse<List<com.prography11thbackend.api.attendance.dto.MemberAttendanceSummaryResponse>>> getAttendanceSummaryBySession(@PathVariable Long sessionId) {
-        List<com.prography11thbackend.api.attendance.dto.MemberAttendanceSummaryResponse> summary = attendanceService.getAttendanceSummaryBySession(sessionId);
+    public ResponseEntity<ApiResponse<List<MemberAttendanceSummaryResponse>>> getAttendanceSummaryBySession(@PathVariable Long sessionId) {
+        List<MemberAttendanceSummaryResponse> summary = attendanceService.getAttendanceSummaryBySession(sessionId);
         return ResponseEntity.ok(ApiResponse.success(summary));
     }
 }

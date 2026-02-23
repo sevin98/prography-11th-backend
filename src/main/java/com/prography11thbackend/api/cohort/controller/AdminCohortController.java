@@ -1,5 +1,6 @@
 package com.prography11thbackend.api.cohort.controller;
 
+import com.prography11thbackend.api.cohort.dto.CohortListResponse;
 import com.prography11thbackend.api.cohort.dto.CohortResponse;
 import com.prography11thbackend.domain.cohort.entity.Cohort;
 import com.prography11thbackend.domain.cohort.service.CohortService;
@@ -24,9 +25,9 @@ public class AdminCohortController {
     private final CohortService cohortService;
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<com.prography11thbackend.api.cohort.dto.CohortListResponse>>> getAllCohorts() {
-        List<com.prography11thbackend.api.cohort.dto.CohortListResponse> cohorts = cohortService.getAllCohorts().stream()
-                .map(com.prography11thbackend.api.cohort.dto.CohortListResponse::from)
+    public ResponseEntity<ApiResponse<List<CohortListResponse>>> getAllCohorts() {
+        List<CohortListResponse> cohorts = cohortService.getAllCohorts().stream()
+                .map(CohortListResponse::from)
                 .collect(Collectors.toList());
         return ResponseEntity.ok(ApiResponse.success(cohorts));
     }
