@@ -15,6 +15,7 @@ import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -23,6 +24,7 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/v1/admin/members")
 @RequiredArgsConstructor
+@Validated
 public class AdminMemberController {
 
     private static final Integer CURRENT_COHORT_NUMBER = 11; // 현재 기수 번호
@@ -183,7 +185,7 @@ public class AdminMemberController {
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
         
         var cohortMember = cohortMemberRepository.findByMemberId(id).stream()
-                .filter(cm -> cm.getCohort().getNumber() == 11)
+                .filter(cm -> cm.getCohort().getNumber().equals(CURRENT_COHORT_NUMBER))
                 .findFirst()
                 .orElse(null);
         
@@ -196,7 +198,7 @@ public class AdminMemberController {
         Member member = memberService.updateMember(id, request.name(), request.phone(), request.cohortId(), request.partId(), request.teamId());
         
         var cohortMember = cohortMemberRepository.findByMemberId(id).stream()
-                .filter(cm -> cm.getCohort().getNumber() == 11)
+                .filter(cm -> cm.getCohort().getNumber().equals(CURRENT_COHORT_NUMBER))
                 .findFirst()
                 .orElse(null);
         
