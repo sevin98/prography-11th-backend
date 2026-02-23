@@ -144,12 +144,35 @@ src/
 
 ### 시스템 아키텍처 다이어그램
 
-![System Architecture](architecture.png)
+![System Architecture](docs/images/architecture.png)
 
 ### 계층형 아키텍처 다이어그램
 
-![Architecture Flowchart](flowchart.png)
+![Architecture Flowchart](docs/images/flowchart.png)
 
 ### 데이터베이스 ERD
 
-![Database ERD](erd.png)
+![Database ERD](docs/images/erd.png)
+
+## 테스트
+
+### 테스트 실행 방법
+
+프로젝트 루트에서 다음 명령어로 테스트를 실행할 수 있습니다:
+
+```bash
+./gradlew test
+```
+
+또는 IDE에서 `src/test/java` 디렉토리의 테스트 클래스를 실행할 수 있습니다.
+
+### 테스트 커버리지
+
+현재 프로젝트는 다음 테스트를 포함하고 있습니다:
+
+- **API 통합 테스트**: 25개 API 엔드포인트 테스트 (Admin 19개, Member 6개)
+- **서비스 단위 테스트**: 7개 서비스 레이어 테스트
+
+### 테스트 결과
+
+![Test Results](docs/images/test_result.png)
