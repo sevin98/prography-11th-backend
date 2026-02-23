@@ -1,0 +1,120 @@
+// Prography 11th Backend ERD
+// https://dbdiagram.io/ 에 붙여넣어 사용하세요
+
+// ============================================
+// 1. 회원 관련 (Member Domain)
+// ============================================
+Table members {
+  id bigint [pk, increment]
+  login_id varchar [not null, unique]
+  password_hash varchar [not null]
+  name varchar [not null]
+  phone varchar
+  role varchar [not null] // MEMBER, ADMIN
+  status varchar [not null] // ACTIVE, WITHDRAWN
+  created_at datetime [not null]
+  updated_at datetime [not null]
+  
+  Note: '회원 정보'
+}
+
+Table deposits {
+  id bigint [pk, increment]
+  member_id bigint [not null, ref: > members.id, unique]
+  balance integer [not null]
+  created_at datetime [not null]
+  updated_at datetime [not null]
+  
+  Note: '보증금 정보 (회원 1:1)'
+}
+
+Table deposit_histories {
+  id bigint [pk, increment]
+  deposit_id bigint [not null, ref: > deposits.id]
+  type varchar [not null] // INITIAL, PENALTY, REFUND
+  amount integer [not null]
+  balance_after integer [not null]
+  description varchar
+  created_at datetime [not null]
+  updated_at datetime [not null]
+  
+  Note: '보증금 변동 이력 (보증금 1:N)'
+}
+
+// ============================================
+// 2. 기수 관련 (Cohort Domain)
+// ============================================
+Table cohorts {
+  id bigint [pk, increment]
+  number integer [not null, unique]
+  created_at datetime [not null]
+  updated_at datetime [not null]
+  
+  Note: '기수 정보 (10기, 11기 등)'
+}
+
+Table teams {
+  id bigint [pk, increment]
+  name varchar [not null]
+  cohort_id bigint [not null, ref: > cohorts.id]
+  created_at datetime [not null]
+  updated_at datetime [not null]
+  
+  Note: '팀 정보 (기수 1:N)'
+}
+
+Table cohort_members {
+  id bigint [pk, increment]
+  member_id bigint [not null, ref: > members.id]
+  cohort_id bigint [not null, ref: > cohorts.id]
+  part varchar [not null] // SERVER, WEB, iOS, ANDROID, DESIGN
+  team_id bigint [ref: > teams.id]
+  excuse_count integer [not null, default: 0]
+  created_at datetime [not null]
+  updated_at datetime [not null]
+  
+  Note: '기수별 회원 정보 (회원-기수 연결, 팀 참조)'
+}
+
+// ============================================
+// 3. 일정 및 출결 관련 (Session & Attendance Domain)
+// ============================================
+Table sessions {
+  id bigint [pk, increment]
+  title varchar [not null]
+  description text [not null]
+  start_time datetime [not null]
+  location varchar
+  cohort_id bigint [not null, ref: > cohorts.id]
+  status varchar [not null] // SCHEDULED, IN_PROGRESS, COMPLETED, CANCELLED
+  created_at datetime [not null]
+  updated_at datetime [not null]
+  
+  Note: '일정 정보 (기수 1:N)'
+}
+
+Table qr_codes {
+  id bigint [pk, increment]
+  hash_value varchar [not null, unique]
+  session_id bigint [not null, ref: > sessions.id]
+  expires_at datetime [not null]
+  is_active boolean [not null]
+  created_at datetime [not null]
+  updated_at datetime [not null]
+  
+  Note: 'QR 코드 정보 (일정 1:N)'
+}
+
+Table attendances {
+  id bigint [pk, increment]
+  member_id bigint [not null, ref: > members.id]
+  session_id bigint [not null, ref: > sessions.id]
+  status varchar [not null] // PRESENT, LATE, ABSENT, EXCUSED
+  penalty integer [not null]
+  checked_at datetime
+  reason varchar
+  created_at datetime [not null]
+  updated_at datetime [not null]
+  
+  Note: '출결 정보 (회원-일정 연결)'
+}

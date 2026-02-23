@@ -4,7 +4,7 @@
 
 ## 개발 환경
 
-- **JDK**: 17 이상
+- **JDK**: bellsoft Liberica JDK 17
 - **Spring Boot**: 4.0.3
 - **Database**: H2 Database
 - **Build Tool**: Gradle
@@ -108,6 +108,7 @@ http://localhost:8080/h2-console
 - **팀**: 11기 Team A, Team B, Team C
 - **관리자**: loginId: `admin`, password: `admin1234`
 - **보증금**: 관리자 초기 보증금 100,000원
+- **랜덤 유저**: 한글 이름을 가진 랜덤 유저 16명 (회원 등록 시 보증금 100,000원 자동 설정)
 
 ## 데이터베이스
 
@@ -138,3 +139,17 @@ src/
 - H2 Database
 - Lombok
 - BCrypt (비밀번호 암호화)
+
+## 시스템 아키텍처
+
+### 시스템 아키텍처 다이어그램
+
+![System Architecture](architecture.png)
+
+### 계층형 아키텍처 다이어그램
+
+![Architecture Flowchart](flowchart.png)
+
+### 데이터베이스 ERD
+
+![Database ERD](erd.png)
