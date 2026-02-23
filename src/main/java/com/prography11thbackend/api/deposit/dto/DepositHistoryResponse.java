@@ -4,7 +4,7 @@ import com.prography11thbackend.domain.deposit.entity.DepositHistory;
 import com.prography11thbackend.domain.deposit.entity.DepositHistoryType;
 
 import java.time.Instant;
-import java.time.ZoneId;
+import java.time.ZoneOffset;
 
 public record DepositHistoryResponse(
         Long id,
@@ -25,7 +25,7 @@ public record DepositHistoryResponse(
                 history.getBalanceAfter(),
                 attendanceId,
                 history.getDescription(),
-                history.getCreatedAt() != null ? history.getCreatedAt().atZone(ZoneId.systemDefault()).toInstant() : null
+                history.getCreatedAt() != null ? history.getCreatedAt().toInstant(ZoneOffset.UTC) : null
         );
     }
 }

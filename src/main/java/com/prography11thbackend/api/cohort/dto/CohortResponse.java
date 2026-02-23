@@ -4,7 +4,7 @@ import com.prography11thbackend.domain.cohort.entity.Cohort;
 import com.prography11thbackend.domain.cohort.entity.Part;
 
 import java.time.Instant;
-import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -33,7 +33,7 @@ public record CohortResponse(
                 cohort.getNumber() + "기",
                 parts,
                 teams,
-                cohort.getCreatedAt() != null ? cohort.getCreatedAt().atZone(ZoneId.systemDefault()).toInstant() : null
+                cohort.getCreatedAt() != null ? cohort.getCreatedAt().toInstant(ZoneOffset.UTC) : null
         );
     }
 }

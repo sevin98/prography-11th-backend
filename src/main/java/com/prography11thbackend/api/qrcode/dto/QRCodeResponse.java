@@ -3,7 +3,7 @@ package com.prography11thbackend.api.qrcode.dto;
 import com.prography11thbackend.domain.qrcode.entity.QRCode;
 
 import java.time.Instant;
-import java.time.ZoneId;
+import java.time.ZoneOffset;
 
 public record QRCodeResponse(
         Long id,
@@ -17,8 +17,8 @@ public record QRCodeResponse(
                 qrCode.getId(),
                 qrCode.getSession().getId(),
                 qrCode.getHashValue(),
-                qrCode.getCreatedAt() != null ? qrCode.getCreatedAt().atZone(ZoneId.systemDefault()).toInstant() : null,
-                qrCode.getExpiresAt() != null ? qrCode.getExpiresAt().atZone(ZoneId.systemDefault()).toInstant() : null
+                qrCode.getCreatedAt() != null ? qrCode.getCreatedAt().toInstant(ZoneOffset.UTC) : null,
+                qrCode.getExpiresAt() != null ? qrCode.getExpiresAt().toInstant(ZoneOffset.UTC) : null
         );
     }
 }
