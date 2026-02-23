@@ -110,6 +110,10 @@ public class MemberServiceImpl implements MemberService {
                 }
             } else {
                 // 기존 CohortMember가 없으면 새로 생성
+                // partId는 필수이므로 null이면 예외 발생
+                if (partId == null) {
+                    throw new BusinessException(ErrorCode.PART_NOT_FOUND);
+                }
                 cohortService.createCohortMember(memberId, cohortId, partId, teamId);
             }
         }
@@ -119,12 +123,15 @@ public class MemberServiceImpl implements MemberService {
 
     @Override
     public Member withdraw(Long memberId) {
-
-        Member member = memberRepository.findActiveById(memberId)
+        Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
         if (member.getStatus() == com.prography11thbackend.domain.member.entity.MemberStatus.WITHDRAWN) {
             throw new BusinessException(ErrorCode.MEMBER_ALREADY_WITHDRAWN);
+        }
+
+        if (member.getStatus() != com.prography11thbackend.domain.member.entity.MemberStatus.ACTIVE) {
+            throw new BusinessException(ErrorCode.MEMBER_NOT_FOUND);
         }
 
         member.withdraw();
