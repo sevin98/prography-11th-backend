@@ -214,14 +214,14 @@ class MemberServiceImplTest {
         // given
         Long memberId = 1L;
 
-        when(memberRepository.findActiveById(memberId)).thenReturn(Optional.of(member));
+        when(memberRepository.findById(memberId)).thenReturn(Optional.of(member));
 
         // when
         Member result = memberService.withdraw(memberId);
 
         // then
         assertThat(result.getStatus()).isEqualTo(MemberStatus.WITHDRAWN);
-        verify(memberRepository, times(1)).findActiveById(memberId);
+        verify(memberRepository, times(1)).findById(memberId);
     }
 
     @Test
@@ -239,7 +239,7 @@ class MemberServiceImplTest {
                 .build();
         setId(withdrawnMember, 1L);
 
-        when(memberRepository.findActiveById(memberId)).thenReturn(Optional.of(withdrawnMember));
+        when(memberRepository.findById(memberId)).thenReturn(Optional.of(withdrawnMember));
 
         // when & then
         assertThatThrownBy(() -> memberService.withdraw(memberId))
@@ -253,7 +253,7 @@ class MemberServiceImplTest {
         // given
         Long memberId = 999L;
 
-        when(memberRepository.findActiveById(memberId)).thenReturn(Optional.empty());
+        when(memberRepository.findById(memberId)).thenReturn(Optional.empty());
 
         // when & then
         assertThatThrownBy(() -> memberService.withdraw(memberId))
