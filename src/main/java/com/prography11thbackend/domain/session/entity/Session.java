@@ -29,6 +29,9 @@ public class Session extends BaseEntity {
     @Column(nullable = false)
     private LocalDateTime startTime;
 
+    @Column
+    private String location; // 장소
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "cohort_id", nullable = false)
     private Cohort cohort;
@@ -38,15 +41,16 @@ public class Session extends BaseEntity {
     private SessionStatus status;
 
     @Builder
-    public Session(String title, String description, LocalDateTime startTime, Cohort cohort, SessionStatus status) {
+    public Session(String title, String description, LocalDateTime startTime, String location, Cohort cohort, SessionStatus status) {
         this.title = title;
         this.description = description;
         this.startTime = startTime;
+        this.location = location;
         this.cohort = cohort;
         this.status = status;
     }
 
-    public void update(String title, String description, LocalDateTime startTime) {
+    public void update(String title, String description, LocalDateTime startTime, String location, SessionStatus status) {
         if (this.status == SessionStatus.CANCELLED) {
             throw new IllegalStateException("취소된 일정은 수정할 수 없습니다.");
         }
@@ -58,6 +62,12 @@ public class Session extends BaseEntity {
         }
         if (startTime != null) {
             this.startTime = startTime;
+        }
+        if (location != null) {
+            this.location = location;
+        }
+        if (status != null) {
+            this.status = status;
         }
     }
 
