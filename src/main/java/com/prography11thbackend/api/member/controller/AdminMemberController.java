@@ -25,6 +25,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class AdminMemberController {
 
+    private static final Integer CURRENT_COHORT_NUMBER = 11; // 현재 기수 번호
+
     private final MemberService memberService;
     private final CohortMemberRepository cohortMemberRepository;
     private final DepositService depositService;
@@ -103,7 +105,7 @@ public class AdminMemberController {
         List<com.prography11thbackend.domain.member.entity.Member> finalMembers = filteredMembers.stream()
                 .filter(member -> {
                     var cohortMember = cohortMemberRepository.findByMemberId(member.getId()).stream()
-                            .filter(cm -> cm.getCohort().getNumber() == 11)
+                            .filter(cm -> cm.getCohort().getNumber().equals(CURRENT_COHORT_NUMBER))
                             .findFirst()
                             .orElse(null);
                     
@@ -147,7 +149,7 @@ public class AdminMemberController {
         List<MemberResponse> memberResponses = pagedMembers.stream()
                 .map(member -> {
                     var cohortMember = cohortMemberRepository.findByMemberId(member.getId()).stream()
-                            .filter(cm -> cm.getCohort().getNumber() == 11)
+                            .filter(cm -> cm.getCohort().getNumber().equals(CURRENT_COHORT_NUMBER))
                             .findFirst()
                             .orElse(null);
                     
