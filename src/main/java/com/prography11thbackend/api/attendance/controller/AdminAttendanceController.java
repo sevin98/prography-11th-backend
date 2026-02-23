@@ -6,6 +6,7 @@ import com.prography11thbackend.api.attendance.dto.AttendanceUpdateRequest;
 import com.prography11thbackend.domain.attendance.entity.Attendance;
 import com.prography11thbackend.domain.attendance.service.AttendanceService;
 import com.prography11thbackend.global.common.ApiResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,7 +23,7 @@ public class AdminAttendanceController {
     private final AttendanceService attendanceService;
 
     @PostMapping
-    public ResponseEntity<ApiResponse<com.prography11thbackend.api.attendance.dto.AttendanceAdminResponse>> createAttendance(@RequestBody AttendanceCreateRequest request) {
+    public ResponseEntity<ApiResponse<com.prography11thbackend.api.attendance.dto.AttendanceAdminResponse>> createAttendance(@Valid @RequestBody AttendanceCreateRequest request) {
         Attendance attendance = attendanceService.createAttendance(
                 request.sessionId(),
                 request.memberId(),
@@ -35,7 +36,7 @@ public class AdminAttendanceController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<com.prography11thbackend.api.attendance.dto.AttendanceAdminResponse>> updateAttendance(@PathVariable Long id, @RequestBody AttendanceUpdateRequest request) {
+    public ResponseEntity<ApiResponse<com.prography11thbackend.api.attendance.dto.AttendanceAdminResponse>> updateAttendance(@PathVariable Long id, @Valid @RequestBody AttendanceUpdateRequest request) {
         Attendance attendance = attendanceService.updateAttendance(id, request.status(), request.lateMinutes(), request.reason());
         return ResponseEntity.ok(ApiResponse.success(com.prography11thbackend.api.attendance.dto.AttendanceAdminResponse.from(attendance)));
     }

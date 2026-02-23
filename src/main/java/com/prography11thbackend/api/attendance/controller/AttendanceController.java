@@ -5,6 +5,7 @@ import com.prography11thbackend.api.attendance.dto.AttendanceResponse;
 import com.prography11thbackend.domain.attendance.entity.Attendance;
 import com.prography11thbackend.domain.attendance.service.AttendanceService;
 import com.prography11thbackend.global.common.ApiResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -21,7 +22,7 @@ public class AttendanceController {
     private final AttendanceService attendanceService;
 
     @PostMapping
-    public ResponseEntity<ApiResponse<AttendanceResponse>> checkAttendance(@RequestBody AttendanceCheckRequest request) {
+    public ResponseEntity<ApiResponse<AttendanceResponse>> checkAttendance(@Valid @RequestBody AttendanceCheckRequest request) {
         Attendance attendance = attendanceService.checkAttendanceByQR(
                 request.hashValue(),
                 request.memberId()

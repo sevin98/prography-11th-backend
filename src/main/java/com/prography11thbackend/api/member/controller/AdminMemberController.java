@@ -10,6 +10,8 @@ import com.prography11thbackend.domain.member.service.MemberService;
 import com.prography11thbackend.global.common.ApiResponse;
 import com.prography11thbackend.global.exception.BusinessException;
 import com.prography11thbackend.global.exception.ErrorCode;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -28,7 +30,7 @@ public class AdminMemberController {
     private final DepositService depositService;
 
     @PostMapping
-    public ResponseEntity<ApiResponse<MemberResponse>> registerMember(@RequestBody MemberRegisterRequest request) {
+    public ResponseEntity<ApiResponse<MemberResponse>> registerMember(@Valid @RequestBody MemberRegisterRequest request) {
         Member member = memberService.register(
                 request.loginId(),
                 request.password(),
@@ -50,8 +52,8 @@ public class AdminMemberController {
 
     @GetMapping
     public ResponseEntity<ApiResponse<com.prography11thbackend.api.member.dto.MemberDashboardResponse>> getAllMembers(
-            @RequestParam(required = false, defaultValue = "0") Integer page,
-            @RequestParam(required = false, defaultValue = "10") Integer size,
+            @RequestParam(required = false, defaultValue = "0") @Min(value = 0, message = "페이지는 0 이상이어야 합니다") Integer page,
+            @RequestParam(required = false, defaultValue = "10") @Min(value = 1, message = "페이지 크기는 1 이상이어야 합니다") Integer size,
             @RequestParam(required = false) String searchType,
             @RequestParam(required = false) String searchValue,
             @RequestParam(required = false) Integer generation,
@@ -134,7 +136,7 @@ public class AdminMemberController {
         
         // 페이징 처리
         int totalElements = finalMembers.size();
-        int totalPages = (int) Math.ceil((double) totalElements / size);
+        int totalPages = size > 0 ? (int) Math.ceil((double) totalElements / size) : 0;
         int start = page * size;
         int end = Math.min(start + size, totalElements);
         
@@ -188,7 +190,7 @@ public class AdminMemberController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<MemberResponse>> updateMember(@PathVariable Long id, @RequestBody MemberUpdateRequest request) {
+    public ResponseEntity<ApiResponse<MemberResponse>> updateMember(@PathVariable Long id, @Valid @RequestBody MemberUpdateRequest request) {
         Member member = memberService.updateMember(id, request.name(), request.phone(), request.cohortId(), request.partId(), request.teamId());
         
         var cohortMember = cohortMemberRepository.findByMemberId(id).stream()

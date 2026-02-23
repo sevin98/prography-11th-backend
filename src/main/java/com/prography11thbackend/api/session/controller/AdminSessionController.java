@@ -13,6 +13,7 @@ import com.prography11thbackend.domain.session.service.SessionService;
 import com.prography11thbackend.global.common.ApiResponse;
 import com.prography11thbackend.global.exception.BusinessException;
 import com.prography11thbackend.global.exception.ErrorCode;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -120,7 +121,7 @@ public class AdminSessionController {
     }
 
     @PostMapping
-    public ResponseEntity<ApiResponse<SessionAdminResponse>> createSession(@RequestBody SessionCreateRequest request) {
+    public ResponseEntity<ApiResponse<SessionAdminResponse>> createSession(@Valid @RequestBody SessionCreateRequest request) {
         Session session = sessionService.createSession(
                 request.title(),
                 request.date(),
