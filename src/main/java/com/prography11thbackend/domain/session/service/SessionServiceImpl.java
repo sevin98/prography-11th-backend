@@ -25,14 +25,19 @@ public class SessionServiceImpl implements SessionService {
     private final QRCodeRepository qrCodeRepository;
 
     @Override
-    public Session createSession(String title, String description, java.time.LocalDateTime startTime, Long cohortId) {
+    public Session createSession(String title, java.time.LocalDate date, java.time.LocalTime time, String location, Long cohortId) {
         Cohort cohort = cohortRepository.findById(cohortId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.COHORT_NOT_FOUND));
 
+        java.time.LocalDateTime startTime = date != null && time != null 
+                ? java.time.LocalDateTime.of(date, time) 
+                : null;
+
         Session session = Session.builder()
                 .title(title)
-                .description(description)
+                .description("") // description은 명세서에 없으므로 빈 문자열
                 .startTime(startTime)
+                .location(location)
                 .cohort(cohort)
                 .status(SessionStatus.SCHEDULED)
                 .build();
@@ -70,15 +75,22 @@ public class SessionServiceImpl implements SessionService {
     }
 
     @Override
-    public Session updateSession(Long id, String title, String description, java.time.LocalDateTime startTime) {
+    public Session updateSession(Long id, String title, java.time.LocalDate date, java.time.LocalTime time, String location, com.prography11thbackend.domain.session.entity.SessionStatus status) {
         Session session = getSessionById(id);
-        session.update(title, description, startTime);
+        java.time.LocalDateTime startTime = date != null && time != null 
+                ? java.time.LocalDateTime.of(date, time) 
+                : null;
+        session.update(title, null, startTime, location, status);
         return session;
     }
 
     @Override
-    public void deleteSession(Long id) {
+    public Session deleteSession(Long id) {
         Session session = getSessionById(id);
+        if (session.getStatus() == com.prography11thbackend.domain.session.entity.SessionStatus.CANCELLED) {
+            throw new com.prography11thbackend.global.exception.BusinessException(com.prography11thbackend.global.exception.ErrorCode.SESSION_ALREADY_CANCELLED);
+        }
         session.cancel();
+        return session;
     }
 }

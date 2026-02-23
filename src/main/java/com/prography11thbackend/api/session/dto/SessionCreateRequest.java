@@ -1,11 +1,12 @@
 package com.prography11thbackend.api.session.dto;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
+import java.time.LocalTime;
 
 public record SessionCreateRequest(
         String title,
-        String description,
-        LocalDateTime startTime,
-        Long cohortId
+        LocalDate date,
+        LocalTime time,
+        String location
 ) {
 }

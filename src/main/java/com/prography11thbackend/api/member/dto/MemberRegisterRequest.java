@@ -4,8 +4,9 @@ public record MemberRegisterRequest(
         String loginId,
         String password,
         String name,
+        String phone,
         Long cohortId,
-        String part,
+        Long partId,
         Long teamId
 ) {
 }

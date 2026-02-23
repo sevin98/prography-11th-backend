@@ -19,18 +19,18 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
 
     @Override
-    public boolean login(String loginId, String password) {
+    public Member login(String loginId, String password) {
         Member member = memberRepository.findByLoginId(loginId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.LOGIN_ID_NOT_FOUND));
+                .orElseThrow(() -> new BusinessException(ErrorCode.LOGIN_FAILED));
 
         if (member.getStatus() == MemberStatus.WITHDRAWN) {
             throw new BusinessException(ErrorCode.MEMBER_WITHDRAWN);
         }
 
         if (!passwordEncoder.matches(password, member.getPasswordHash())) {
-            throw new BusinessException(ErrorCode.PASSWORD_MISMATCH);
+            throw new BusinessException(ErrorCode.LOGIN_FAILED);
         }
 
-        return true;
+        return member;
     }
 }

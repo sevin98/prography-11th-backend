@@ -29,6 +29,9 @@ public class Member extends BaseEntity {
         @Column(nullable=false)
         private String name;
 
+        @Column
+        private String phone;
+
         @Enumerated(EnumType.STRING)
         @Column(nullable=false)
         private MemberRole role;
@@ -38,10 +41,11 @@ public class Member extends BaseEntity {
         private MemberStatus status;
 
         @Builder
-        public Member(String loginId, String passwordHash, String name, MemberRole role, MemberStatus status) {
+        public Member(String loginId, String passwordHash, String name, String phone, MemberRole role, MemberStatus status) {
                 this.loginId = loginId;
                 this.passwordHash = passwordHash;
                 this.name = name;
+                this.phone = phone;
                 this.role = role;
                 this.status = status;
         }
@@ -50,9 +54,10 @@ public class Member extends BaseEntity {
                 this.status = MemberStatus.WITHDRAWN;
         }
 
-        public void update(String name) {
+        public void update(String name, String phone) {
                 if (name != null && !name.isBlank()) {
                         this.name = name;
                 }
+                this.phone = phone;
         }
 }
