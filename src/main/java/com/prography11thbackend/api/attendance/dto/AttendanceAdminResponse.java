@@ -5,7 +5,7 @@ import com.prography11thbackend.domain.attendance.entity.AttendanceStatus;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
+import java.time.ZoneOffset;
 
 public record AttendanceAdminResponse(
         Long id,
@@ -36,9 +36,9 @@ public record AttendanceAdminResponse(
                 lateMinutes,
                 attendance.getPenalty(),
                 attendance.getReason(),
-                checkedAt != null ? checkedAt.atZone(ZoneId.systemDefault()).toInstant() : null,
-                attendance.getCreatedAt() != null ? attendance.getCreatedAt().atZone(ZoneId.systemDefault()).toInstant() : null,
-                attendance.getUpdatedAt() != null ? attendance.getUpdatedAt().atZone(ZoneId.systemDefault()).toInstant() : null
+                checkedAt != null ? checkedAt.toInstant(ZoneOffset.UTC) : null,
+                attendance.getCreatedAt() != null ? attendance.getCreatedAt().toInstant(ZoneOffset.UTC) : null,
+                attendance.getUpdatedAt() != null ? attendance.getUpdatedAt().toInstant(ZoneOffset.UTC) : null
         );
     }
 }

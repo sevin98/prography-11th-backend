@@ -4,7 +4,7 @@ import com.prography11thbackend.domain.member.entity.Member;
 import com.prography11thbackend.domain.member.entity.MemberStatus;
 
 import java.time.Instant;
-import java.time.ZoneId;
+import java.time.ZoneOffset;
 
 public record MemberWithdrawResponse(
         Long id,
@@ -19,7 +19,7 @@ public record MemberWithdrawResponse(
                 member.getLoginId(),
                 member.getName(),
                 member.getStatus(),
-                member.getUpdatedAt() != null ? member.getUpdatedAt().atZone(ZoneId.systemDefault()).toInstant() : null
+                member.getUpdatedAt() != null ? member.getUpdatedAt().toInstant(ZoneOffset.UTC) : null
         );
     }
 }

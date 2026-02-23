@@ -6,7 +6,7 @@ import com.prography11thbackend.domain.session.entity.SessionStatus;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.time.ZoneId;
+import java.time.ZoneOffset;
 
 public record SessionBasicResponse(
         Long id,
@@ -26,8 +26,8 @@ public record SessionBasicResponse(
                 session.getStartTime() != null ? session.getStartTime().toLocalTime() : null,
                 session.getLocation(),
                 session.getStatus(),
-                session.getCreatedAt() != null ? session.getCreatedAt().atZone(ZoneId.systemDefault()).toInstant() : null,
-                session.getUpdatedAt() != null ? session.getUpdatedAt().atZone(ZoneId.systemDefault()).toInstant() : null
+                session.getCreatedAt() != null ? session.getCreatedAt().toInstant(ZoneOffset.UTC) : null,
+                session.getUpdatedAt() != null ? session.getUpdatedAt().toInstant(ZoneOffset.UTC) : null
         );
     }
 }

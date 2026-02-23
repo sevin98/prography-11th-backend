@@ -6,7 +6,7 @@ import com.prography11thbackend.domain.member.entity.MemberRole;
 import com.prography11thbackend.domain.member.entity.MemberStatus;
 
 import java.time.Instant;
-import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.Optional;
 
 public record MemberResponse(
@@ -53,8 +53,8 @@ public record MemberResponse(
                 partName,
                 teamName,
                 deposit,
-                member.getCreatedAt() != null ? member.getCreatedAt().atZone(ZoneId.systemDefault()).toInstant() : null,
-                member.getUpdatedAt() != null ? member.getUpdatedAt().atZone(ZoneId.systemDefault()).toInstant() : null
+                member.getCreatedAt() != null ? member.getCreatedAt().toInstant(ZoneOffset.UTC) : null,
+                member.getUpdatedAt() != null ? member.getUpdatedAt().toInstant(ZoneOffset.UTC) : null
         );
     }
 }
